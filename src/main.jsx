@@ -2,15 +2,14 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { RouterProvider, createBrowserRouter, defer } from "react-router-dom";
-import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "./context/AuthContext.jsx";
 import App from "./App.jsx";
 import DebugRouteError from "./DebugRouteError.jsx";
 import "./index.css";
 import ToastProvider from "./components/ui/Toast.jsx";
 
-
-
+// 🔹 API base URL: Netlify te VITE_API_URL set thakle oita use hobe,
+// na thakle fallback hisebe localhost use korbe (local dev er jonno)
 const API = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 // ---------- Helper: safe JSON fetch ----------
@@ -51,9 +50,8 @@ const router = createBrowserRouter([
         index: true,
         loader: () =>
           defer({
-            recentListings: safeJsonFetch(`${API}/api/listings?limit=6`, {
-              credentials: "include",
-            }),
+            // 🔁 CREDENTIALS REMOVE: public GET, no cookies needed
+            recentListings: safeJsonFetch(`${API}/api/listings?limit=6`),
           }),
         async lazy() {
           const m = await import("./components/pages/Home.jsx");
@@ -66,9 +64,8 @@ const router = createBrowserRouter([
         path: "supplies",
         loader: () =>
           defer({
-            supplies: safeJsonFetch(`${API}/api/listings`, {
-              credentials: "include",
-            }),
+            // 🔁 CREDENTIALS REMOVE
+            supplies: safeJsonFetch(`${API}/api/listings`),
           }),
         async lazy() {
           const m = await import("./components/pages/PetsSupplies.jsx");
@@ -81,11 +78,11 @@ const router = createBrowserRouter([
         path: "category-filtered-product/:categoryName",
         loader: ({ params }) =>
           defer({
+            // 🔁 CREDENTIALS REMOVE
             supplies: safeJsonFetch(
               `${API}/api/listings?category=${encodeURIComponent(
                 params.categoryName
-              )}`,
-              { credentials: "include" }
+              )}`
             ),
           }),
         async lazy() {
@@ -98,9 +95,7 @@ const router = createBrowserRouter([
       {
         path: "supplies/:id",
         loader: ({ params }) =>
-          safeJsonFetch(`${API}/api/listings/${params.id}`, {
-            credentials: "include",
-          }),
+          safeJsonFetch(`${API}/api/listings/${params.id}`),
         async lazy() {
           const m = await import("./components/pages/ListingDetails.jsx");
           return { Component: m.default };
@@ -142,13 +137,12 @@ const router = createBrowserRouter([
       },
 
       // PROTECTED: Add Listing
-      // main.jsx → PROTECTED: Add Listing
       {
         path: "add-listing",
         async lazy() {
           const [PR, Page] = await Promise.all([
             import("./routes/PrivateRoute.jsx"),
-            import("./components/pages/AddLisiting.jsx"), // ❌ typo
+            import("./components/pages/AddLisiting.jsx"), // jei file name chilo oitai rakhlam
           ]);
           return {
             element: (
@@ -171,6 +165,7 @@ const router = createBrowserRouter([
             );
           }
 
+          // 🔹 Orders protected: Firebase token header e jacche
           return safeJsonFetch(`${API}/api/orders`, {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -209,7 +204,6 @@ ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <AuthProvider>
       <ToastProvider />
-      
       <RouterProvider router={router} />
     </AuthProvider>
   </React.StrictMode>
