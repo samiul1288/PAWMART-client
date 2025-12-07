@@ -1,0 +1,492 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* === NAVBAR TEXT OVERRIDE === */
+/* Light theme: navbar text সবসময় গাঢ় কালো */
+html[data-theme="light"] .navbar a,
+html[data-theme="light"] .navbar button,
+html[data-theme="light"] .navbar .btn,
+html[data-theme="light"] .navbar .btn-ghost,
+body:not(.dark) .navbar a,
+body:not(.dark) .navbar button,
+body:not(.dark) .navbar .btn,
+body:not(.dark) .navbar .btn-ghost {
+  color: #0f172a !important; /* slate-900 */
+}
+
+/* Dark theme: navbar text সবসময় almost white */
+html[data-theme="dark"] .navbar a,
+html[data-theme="dark"] .navbar button,
+html[data-theme="dark"] .navbar .btn,
+html[data-theme="dark"] .navbar .btn-ghost,
+body.dark .navbar a,
+body.dark .navbar button,
+body.dark .navbar .btn,
+body.dark .navbar .btn-ghost {
+  color: #f9fafb !important; /* zinc-50 */
+}
+
+/* === Base Reset & Fonts === */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --bg-dark: #020617;
+  --card-dark: rgba(15, 23, 42, 0.9);
+  --accent: #22d3ee;
+  --accent-soft: rgba(56, 189, 248, 0.4);
+  --input-bg: rgba(15, 23, 42, 0.85);
+  --border-soft: rgba(148, 163, 184, 0.4);
+  --text-main: #e5e7eb;
+  --text-muted: #9ca3af;
+  --danger: #fb7185;
+}
+
+/* 💡 Global body – theme (DaisyUI) handle koruk */
+body {
+  min-height: 100vh;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+}
+
+/* React root wrapper login/register/forgot page */
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  position: relative;
+  isolation: isolate;
+
+  /* 🔥 Dark gradient & white text only for auth pages */
+  background: radial-gradient(circle at top left, #1e293b 0, #020617 45%)
+      fixed,
+    radial-gradient(circle at bottom right, #22d3ee33 0, #020617 55%) fixed;
+  color: var(--text-main);
+  overflow: hidden;
+}
+
+/* Floating animated blobs */
+.login-page::before,
+.login-page::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  opacity: 0.6;
+}
+
+.login-page::before {
+  background:
+    radial-gradient(circle at 20% 20%, #22d3ee33 0, transparent 55%),
+    radial-gradient(circle at 80% 80%, #f9731633 0, transparent 55%);
+  animation: floatGlow 18s linear infinite alternate;
+}
+
+.login-page::after {
+  background:
+    radial-gradient(circle at 80% 15%, #a855f733 0, transparent 55%),
+    radial-gradient(circle at 10% 90%, #22c55e33 0, transparent 55%);
+  animation: floatGlow2 22s linear infinite alternate;
+}
+
+@keyframes floatGlow {
+  from {
+    transform: translate3d(-10px, 20px, 0) scale(1);
+  }
+  to {
+    transform: translate3d(10px, -20px, 0) scale(1.05);
+  }
+}
+
+@keyframes floatGlow2 {
+  from {
+    transform: translate3d(15px, -10px, 0) scale(1);
+  }
+  to {
+    transform: translate3d(-15px, 10px, 0) scale(1.06);
+  }
+}
+
+/* === Main Card === */
+
+.box {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  border-radius: 1.75rem;
+  padding: 2px;
+  background: linear-gradient(
+    135deg,
+    rgba(34, 211, 238, 0.8),
+    rgba(129, 140, 248, 0.5),
+    rgba(248, 113, 113, 0.7)
+  );
+  box-shadow:
+    0 20px 50px rgba(15, 23, 42, 0.9),
+    0 0 0 1px rgba(148, 163, 184, 0.3);
+  overflow: hidden;
+  z-index: 1;
+}
+
+.login {
+  border-radius: 1.6rem;
+  background: radial-gradient(
+      circle at top left,
+      rgba(148, 163, 184, 0.15),
+      transparent 55%
+    ),
+    var(--card-dark);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  padding: 1px;
+}
+
+.loginbx {
+  border-radius: 1.5rem;
+  padding: 2.4rem 2rem 2rem;
+  background: radial-gradient(
+      ellipse at top,
+      rgba(15, 23, 42, 0.9),
+      rgba(15, 23, 42, 0.97)
+    );
+  position: relative;
+  overflow: hidden;
+}
+
+/* subtle overlay */
+.loginbx::before {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  background-image: linear-gradient(
+    120deg,
+    rgba(148, 163, 184, 0.1) 0,
+    transparent 40%,
+    transparent 60%,
+    rgba(148, 163, 184, 0.08) 100%
+  );
+  opacity: 0.2;
+  transform: translate3d(-30%, 0, 0);
+  animation: shine 16s infinite linear;
+}
+
+@keyframes shine {
+  from {
+    transform: translate3d(-60%, 0, 0);
+  }
+  to {
+    transform: translate3d(60%, 0, 0);
+  }
+}
+
+/* === Heading === */
+
+.loginbx h2 {
+  position: relative;
+  text-transform: uppercase;
+  text-align: center;
+  letter-spacing: 0.16em;
+  font-size: 1.4rem;
+  margin-bottom: 2rem;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+}
+
+.loginbx h2 span {
+  font-weight: 600;
+}
+
+.loginbx h2 i.fa-right-to-bracket {
+  color: var(--accent);
+}
+
+.loginbx h2 i.fa-heart {
+  color: #fb7185;
+  animation: heartbeat 1.5s ease-in-out infinite;
+}
+
+@keyframes heartbeat {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  25% {
+    transform: scale(1.18);
+  }
+  50% {
+    transform: scale(0.94);
+  }
+}
+
+/* === Form === */
+
+.login-form {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  z-index: 1;
+}
+
+.login-form input[type="email"],
+.login-form input[type="password"] {
+  width: 100%;
+  padding: 0.85rem 0.95rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-soft);
+  background: var(--input-bg);
+  color: var(--text-main);
+  font-size: 0.95rem;
+  outline: none;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    background 0.18s ease,
+    transform 0.08s ease;
+}
+
+.login-form input[type="email"]::placeholder,
+.login-form input[type="password"]::placeholder {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.login-form input[type="email"]:focus,
+.login-form input[type="password"]:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.35),
+    0 10px 30px rgba(15, 23, 42, 0.8);
+  background: rgba(15, 23, 42, 0.98);
+  transform: translateY(-1px);
+}
+
+/* Submit button */
+
+.login-form input[type="submit"] {
+  width: 100%;
+  margin-top: 0.4rem;
+  padding: 0.9rem 1rem;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  color: #0f172a;
+  background: linear-gradient(135deg, #22d3ee, #818cf8);
+  box-shadow:
+    0 16px 35px rgba(56, 189, 248, 0.38),
+    0 0 0 1px rgba(15, 23, 42, 0.6);
+  transition:
+    transform 0.1s ease,
+    box-shadow 0.12s ease,
+    filter 0.12s ease;
+}
+
+.login-form input[type="submit"]:hover {
+  filter: brightness(1.02);
+  transform: translateY(-1px);
+  box-shadow:
+    0 18px 40px rgba(56, 189, 248, 0.48),
+    0 0 0 1px rgba(15, 23, 42, 0.9);
+}
+
+.login-form input[type="submit"]:active {
+  transform: translateY(1px) scale(0.99);
+  box-shadow:
+    0 10px 25px rgba(15, 23, 42, 0.9),
+    0 0 0 1px rgba(15, 23, 42, 0.9);
+}
+
+.login-form input[type="submit"].btn-disabled {
+  filter: grayscale(0.3) brightness(0.9);
+  cursor: not-allowed;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.8);
+}
+
+/* === Google Button === */
+
+.google-btn {
+  margin-top: 0.25rem;
+  width: 100%;
+  padding: 0.8rem 1rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-soft);
+  background: radial-gradient(
+      circle at top left,
+      rgba(148, 163, 184, 0.15),
+      transparent 55%
+    ),
+    rgba(15, 23, 42, 0.95);
+  color: var(--text-main);
+  font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  cursor: pointer;
+  transition:
+    border-color 0.16s ease,
+    box-shadow 0.16s ease,
+    transform 0.08s ease,
+    background 0.16s ease;
+}
+
+.google-btn:hover {
+  border-color: var(--accent-soft);
+  box-shadow:
+    0 14px 32px rgba(15, 23, 42, 0.95),
+    0 0 0 1px rgba(56, 189, 248, 0.4);
+  transform: translateY(-1px);
+  background: radial-gradient(
+      circle at top right,
+      rgba(34, 211, 238, 0.18),
+      transparent 55%
+    ),
+    rgba(15, 23, 42, 0.98);
+}
+
+.google-btn:active {
+  transform: translateY(1px) scale(0.99);
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.96);
+}
+
+.google-btn:disabled {
+  opacity: 0.8;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.9);
+}
+
+.google-icon {
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  background: white;
+  color: #1f2937;
+  font-size: 1.1rem;
+}
+
+/* divider */
+
+.divider {
+  margin: 0.4rem 0 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+}
+
+.divider::before,
+.divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    rgba(148, 163, 184, 0.6),
+    transparent
+  );
+}
+
+/* bottom group links */
+
+.group {
+  margin-top: 0.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.8rem;
+}
+
+.group a {
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color 0.15s ease, text-shadow 0.15s ease;
+}
+
+.group a:hover {
+  color: var(--accent);
+  text-shadow: 0 0 12px rgba(34, 211, 238, 0.8);
+}
+
+/* === Responsive tweaks === */
+
+@media (max-width: 480px) {
+  .loginbx {
+    padding: 2rem 1.4rem 1.6rem;
+  }
+
+  .loginbx h2 {
+    font-size: 1.2rem;
+    letter-spacing: 0.12em;
+  }
+
+  .group {
+    flex-direction: column;
+    gap: 0.35rem;
+    align-items: flex-start;
+  }
+
+ .login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  position: relative;
+  isolation: isolate;
+
+  /* 🔥 Full width screen, container ভেঙে বের হয়ে আসবে */
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+
+  background: radial-gradient(circle at top left, #1e293b 0, #020617 45%)
+      fixed,
+    radial-gradient(circle at bottom right, #22d3ee33 0, #020617 55%) fixed;
+  color: var(--text-main);
+  overflow: hidden;
+}
+
+}
+/* === My Listings header marquee === */
+@keyframes listings-marquee {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.marquee {
+  display: inline-block;
+  white-space: nowrap;
+  /* duration চাইলে বাড়াতে/কমাতে পারো */
+  animation: listings-marquee 15s linear infinite;
+}
+
+/* hover করলে scroll থেমে যাবে */
+.marquee:hover {
+  animation-play-state: paused;
+}
+
