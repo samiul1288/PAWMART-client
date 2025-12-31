@@ -1,16 +1,56 @@
-# React + Vite
+# 🛒 PAWMART (Client)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+PAWMART is a responsive e-commerce client-side web application where users can browse products, view details, and manage a shopping experience with a clean UI.
 
-Currently, two official plugins are available:
+## 🔗 Live Link
+- Live Website:  pawmart-clientsite.netlify.app
+- Client Repo: https://github.com/samiul1288/PAWMART-client
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+---
 
-## React Compiler
+## 📌 Project Overview
+PAWMART client is built with modern frontend technologies to deliver a smooth and user-friendly shopping experience.  
+It focuses on responsive design, fast navigation, and clean UI components for an e-commerce platform.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the ESLint configuration
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+
+## 🧰 Technologies Used
+- HTML5
+- CSS3
+- JavaScript (ES6+)
+- React
+- React Router DOM
+- Tailwind CSS (if used)
+- Firebase (if used)
+
+---
+
+## ✨ Core Features
+- ✅ Responsive UI for mobile, tablet, and desktop
+- ✅ Product listing & product details page
+- ✅ User authentication (Login/Register) *(if added)*
+- ✅ Protected routes *(if added)*
+- ✅ Dynamic data fetching from API *(if added)*
+- ✅ Clean UI/UX with reusable components
+
+---
+
+## 📦 Dependencies Used
+> (Update based on your `package.json`)
+
+- react
+- react-dom
+- react-router-dom
+- axios / fetch *(whichever you used)*
+- firebase *(if used)*
+- tailwindcss *(if used)*
+
+---
+
+## ⚙️ How to Run This Project Locally (Step-by-step)
+
+### 1️⃣ Clone the repository
+```bash
+git clone https://github.com/samiul1288/PAWMART-client.git
