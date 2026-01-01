@@ -13,6 +13,7 @@ PAWMART client is built with modern frontend technologies to deliver a smooth an
 It focuses on responsive design, fast navigation, and clean UI components for an e-commerce platform.
 
 ---
+<img width="1905" height="858" alt="image" src="https://github.com/user-attachments/assets/4e86f462-e340-4e6a-aae0-74431f665aab" />
 
 
 
