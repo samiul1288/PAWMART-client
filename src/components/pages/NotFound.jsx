@@ -2,29 +2,30 @@ import { Link } from "react-router-dom";
 
 export default function NotFound() {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 text-center px-6">
-      {/* Image Box */}
-      <div className="bg-white shadow-lg rounded-lg p-6">
-        <img
-          src="https://copilot.microsoft.com/th/id/BCO.aa7c34bc-7a45-4f36-a758-314ff360ccd6.https://seosherpa.com/wp-content/uploads/2020/12/404-error-page-social-share.png"
-          alt="404 Illustration"
-          className="mx-auto w-80"
-        />
+    <div className="min-h-[70vh] flex items-center justify-center px-3">
+      <div className="max-w-xl w-full text-center space-y-4">
+        <h1 className="text-6xl font-extrabold">404</h1>
+        <p className="text-xl font-semibold">Page not found</p>
+        <p className="opacity-70">
+          The page you are looking for doesn’t exist or was moved.
+        </p>
+
+        {/* ✅ No external image to avoid broken URLs in production */}
+        <div className="bg-base-200 border border-base-300 rounded-2xl p-6">
+          <p className="opacity-80">
+            Try going back to Home or explore listings.
+          </p>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <Link to="/" className="btn btn-primary">
+            Go Home
+          </Link>
+          <Link to="/explore" className="btn btn-outline">
+            Explore Listings
+          </Link>
+        </div>
       </div>
-
-      {/* Text */}
-      <h2 className="text-2xl font-bold mt-6">404 — Page not found</h2>
-      <p className="text-gray-600 mt-2">
-        The page you are looking for doesn’t exist.
-      </p>
-
-      {/* Button */}
-      <Link
-        to="/"
-        className="mt-6 inline-block px-6 py-3 text-white bg-blue-600 rounded-lg shadow hover:bg-blue-700 transition"
-      >
-        Go Home
-      </Link>
     </div>
   );
 }
