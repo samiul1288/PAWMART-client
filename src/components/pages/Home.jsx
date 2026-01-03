@@ -1,25 +1,83 @@
 // src/components/pages/Home.jsx
-import { Suspense } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { Await, Link, useLoaderData } from "react-router-dom";
 import { motion } from "framer-motion";
 import LoadingSpinner from "../layout/LoadingSpinner";
+import fallbackImg from "../../assets/fallback-listing.svg";
 
-// ছোট হেল্পার: প্রাইস ফরম্যাট
 const fmtPrice = (p) => (Number(p) === 0 ? "Free for adoption" : `$${p}`);
+
+const SLIDES = [
+  {
+    tag: "Community",
+    title: "Built for community & care",
+    desc: "Support rescues and foster homes by connecting adopters with responsible posts.",
+    cta1: { label: "Explore Listings", to: "/supplies" },
+    cta2: { label: "Add Listing", to: "/add-listing" },
+    img: "https://images.pexels.com/photos/5731862/pexels-photo-5731862.jpeg?auto=compress&cs=tinysrgb&w=1200",
+  },
+  {
+    tag: "Light/Dark Ready",
+    title: "Portfolio-ready UI & UX",
+    desc: "Consistent spacing, reusable components, validation, loaders, and accessible contrast.",
+    cta1: { label: "Go to Explore", to: "/supplies" },
+    cta2: { label: "View Dashboard", to: "/my-orders" },
+    img: "https://images.pexels.com/photos/5731913/pexels-photo-5731913.jpeg?auto=compress&cs=tinysrgb&w=1200",
+  },
+  {
+    tag: "Secure Dashboard",
+    title: "Protected routes, real data",
+    desc: "Firebase token auth for orders and user-owned CRUD — no public CRUD pages.",
+    cta1: { label: "My Listings", to: "/my-listings" },
+    cta2: { label: "My Orders", to: "/my-orders" },
+    img: "https://images.pexels.com/photos/7210267/pexels-photo-7210267.jpeg?auto=compress&cs=tinysrgb&w=1200",
+  },
+];
+
+const CATEGORIES = [
+  {
+    label: "Pets",
+    value: "Pets",
+    desc: "Adopt lovable cats, dogs and more.",
+    icon: "🐶",
+  },
+  {
+    label: "Food",
+    value: "Food",
+    desc: "Nutritious food for healthy pets.",
+    icon: "🍖",
+  },
+  {
+    label: "Accessories",
+    value: "Accessories",
+    desc: "Toys, leashes, beds & more.",
+    icon: "🎾",
+  },
+  {
+    label: "Care Products",
+    value: "Care Products",
+    desc: "Grooming & pet care essentials.",
+    icon: "🧴",
+  },
+];
+
 export default function Home() {
   const { recentListings } = useLoaderData() || {};
 
   return (
-    <section className="container mx-auto px-3 py-8 space-y-12">
-      {/* 1. Banner / Hero */}
-      <HeroBanner />
+    <section className="space-y-14">
+      {/* 1) HERO / CAROUSEL (full width) */}
+      <HeroCarousel />
 
-      {/* 2. Category section */}
+      {/* 2) QUICK FEATURES */}
+      <FeatureStrip />
+
+      {/* 3) CATEGORIES */}
       <CategorySection />
 
-      {/* 3. Recent Listings (last 6) */}
-      <section className="space-y-4">
-        <div className="flex items-center justify-between gap-3">
+      {/* 4) RECENT LISTINGS */}
+      <section className="container mx-auto px-4 space-y-4">
+        <div className="flex items-end justify-between gap-3">
           <div>
             <h2 className="text-2xl md:text-3xl font-semibold">
               Recent Listings
@@ -28,165 +86,264 @@ export default function Home() {
               Latest pets and pet products added by our community.
             </p>
           </div>
-          <Link to="/supplies" className="btn btn-link px-0">
-            View all
+          <Link to="/supplies" className="btn btn-outline btn-sm md:btn-md">
+            View All
           </Link>
         </div>
 
-        <Suspense fallback={<LoadingSpinner />}>
+        <Suspense fallback={<ListingsSkeleton />}>
           <Await resolve={recentListings}>
             {(items) => <RecentListingsGrid items={items || []} />}
           </Await>
         </Suspense>
       </section>
 
-      {/* 4. Extra Sections */}
-      <WhyAdoptSection />
-      <PetHeroesSection />
+      {/* 5) HIGHLIGHTS */}
+      <Highlights />
+
+      {/* 6) STATS */}
+      <Stats />
+
+      {/* 7) HOW IT WORKS */}
+      <HowItWorks />
+
+      {/* 8) TESTIMONIALS */}
+      <Testimonials />
+
+      {/* 9) FAQ */}
+      <FAQ />
+
+      {/* 10) NEWSLETTER */}
+      <Newsletter />
+
+      {/* 11) CTA */}
+      <FinalCTA />
+
+      {/* scroll hint spacing */}
+      <div className="pb-8" />
     </section>
   );
 }
 
-/* -------------------- Hero Banner -------------------- */
+/* ---------------- HERO CAROUSEL ---------------- */
 
-function HeroBanner() {
+function HeroCarousel() {
+  const [i, setI] = useState(0);
+  const slide = SLIDES[i];
+
+  useEffect(() => {
+    const t = setInterval(() => setI((p) => (p + 1) % SLIDES.length), 6000);
+    return () => clearInterval(t);
+  }, []);
+
+  const go = (dir) => {
+    setI((p) => {
+      const next = dir === "next" ? p + 1 : p - 1;
+      return (next + SLIDES.length) % SLIDES.length;
+    });
+  };
+
   return (
-    <div className="grid lg:grid-cols-2 gap-8 items-center">
-      {/* Left text */}
-      <motion.div
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.4 }}
-        className="space-y-4"
-      >
-        <p className="inline-flex items-center gap-2 text-xs md:text-sm px-3 py-1 rounded-full bg-primary/10 text-primary font-semibold">
-          🐾 Welcome to Pawmart
-        </p>
-        <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold leading-tight">
-          Find Your
-          <span className="text-primary"> Furry Friend </span>
-          Today!
-        </h1>
-        <p className="text-sm md:text-base opacity-80 max-w-xl">
-          PawMart connects local pet owners, rescuers, and pet shops with loving
-          families. Adopt, don&apos;t shop — because every pet deserves a safe,
-          happy home.
-        </p>
+    <section className="w-full bg-base-200/40 border-b border-base-300/60">
+      <div className="container mx-auto px-4 py-10 md:py-12">
+        <div className="grid lg:grid-cols-2 gap-8 items-center min-h-[60vh]">
+          {/* Left */}
+          <motion.div
+            key={slide.title}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35 }}
+            className="space-y-4"
+          >
+            <div className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold bg-primary/10 text-primary">
+              <span>✨</span>
+              <span>{slide.tag}</span>
+            </div>
 
-        <div className="flex flex-wrap gap-3">
-          <Link to="/supplies" className="btn btn-primary">
-            Browse Pets &amp; Supplies
-          </Link>
-          <Link to="/add-listing" className="btn btn-outline">
-            Add a Listing
-          </Link>
-        </div>
+            <h1 className="text-3xl md:text-5xl font-bold leading-tight">
+              {slide.title}
+            </h1>
 
-        <ul className="mt-3 text-xs md:text-sm opacity-80 space-y-1">
-          <li>• Trusted local adopters and pet lovers</li>
-          <li>• Verified listings with clear details</li>
-          <li>• Easy order and adoption request process</li>
-        </ul>
-      </motion.div>
+            <p className="text-sm md:text-base opacity-80 max-w-xl">
+              {slide.desc}
+            </p>
 
-      {/* Right pseudo-carousel (3 images) */}
-      <motion.div
-        className="grid gap-4 md:grid-cols-2"
-        initial={{ opacity: 0, x: 20 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.4 }}
-      >
-        <div className="rounded-2xl overflow-hidden bg-base-300 aspect-[4/3]">
-          <img
-            src="https://images.pexels.com/photos/5731862/pexels-photo-5731862.jpeg?auto=compress&cs=tinysrgb&w=800"
-            alt="Happy pet adoption"
-            className="w-full h-full object-cover"
-          />
+            <div className="flex flex-wrap gap-3 pt-1">
+              <Link to={slide.cta1.to} className="btn btn-primary">
+                {slide.cta1.label}
+              </Link>
+              <Link to={slide.cta2.to} className="btn btn-outline">
+                {slide.cta2.label}
+              </Link>
+            </div>
+
+            {/* Controls */}
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                onClick={() => go("prev")}
+                className="btn btn-sm btn-ghost"
+              >
+                ← Prev
+              </button>
+              <div className="flex gap-2">
+                {SLIDES.map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setI(idx)}
+                    className={[
+                      "h-2.5 w-2.5 rounded-full transition",
+                      idx === i ? "bg-primary" : "bg-base-300",
+                    ].join(" ")}
+                    aria-label={`Slide ${idx + 1}`}
+                  />
+                ))}
+              </div>
+              <button
+                onClick={() => go("next")}
+                className="btn btn-sm btn-ghost"
+              >
+                Next →
+              </button>
+            </div>
+
+            {/* Scroll hint */}
+            <div className="pt-3 opacity-60 text-xs flex items-center gap-2">
+              <span>↓</span>
+              <span>Scroll to explore sections</span>
+            </div>
+          </motion.div>
+
+          {/* Right */}
+          <motion.div
+            key={slide.img}
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.35 }}
+            className="relative"
+          >
+            <div className="rounded-3xl overflow-hidden border border-base-300/60 bg-base-300 aspect-[16/10]">
+              <img
+                src={slide.img}
+                alt={slide.title}
+                className="w-full h-full object-cover"
+                onError={(e) => (e.currentTarget.src = fallbackImg)}
+              />
+            </div>
+
+            {/* Right cards (aligned + icons) */}
+            <div className="grid sm:grid-cols-2 gap-4 mt-4">
+              <MiniCard
+                title="Fast Explore"
+                desc="Search, filter, sort & paginate on Explore page."
+                icon="🔎"
+              />
+              <MiniCard
+                title="Protected Dashboard"
+                desc="Add listings, manage orders, edit profile."
+                icon="🛡️"
+              />
+              <div className="sm:col-span-2">
+                <MiniCard
+                  title="Light/Dark Ready"
+                  desc="Accessible contrast and consistent UI components."
+                  icon="🌗"
+                />
+              </div>
+            </div>
+          </motion.div>
         </div>
-        <div className="space-y-4">
-          <div className="rounded-2xl overflow-hidden bg-base-300 aspect-[4/3]">
-            <img
-              src="https://images.pexels.com/photos/5731913/pexels-photo-5731913.jpeg?auto=compress&cs=tinysrgb&w=800"
-              alt="Pet care products"
-              className="w-full h-full object-cover"
-            />
-          </div>
-          <div className="rounded-2xl overflow-hidden bg-base-300 aspect-[4/3] hidden md:block">
-            <img
-              src="https://images.pexels.com/photos/7210267/pexels-photo-7210267.jpeg?auto=compress&cs=tinysrgb&w=800"
-              alt="Pet food and accessories"
-              className="w-full h-full object-cover"
-            />
-          </div>
+      </div>
+    </section>
+  );
+}
+
+function MiniCard({ title, desc, icon }) {
+  return (
+    <div className="rounded-2xl border border-base-300/60 bg-base-100/70 p-4 shadow-sm h-full">
+      <div className="flex items-start gap-3">
+        <div className="text-2xl">{icon}</div>
+        <div className="space-y-1">
+          <h3 className="font-semibold">{title}</h3>
+          <p className="text-sm opacity-70">{desc}</p>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }
 
-/* -------------------- Category Section -------------------- */
+/* ---------------- FEATURE STRIP ---------------- */
 
-// 🔹 Home.jsx
+function FeatureStrip() {
+  const items = useMemo(
+    () => [
+      {
+        t: "Consistent Cards",
+        d: "Same height, same radius, same layout.",
+        icon: "🧩",
+      },
+      {
+        t: "Loading States",
+        d: "Skeletons/spinners during fetch.",
+        icon: "⏳",
+      },
+      { t: "Clean Forms", d: "Validation, errors, success UX.", icon: "✅" },
+      {
+        t: "Responsive",
+        d: "Mobile → Desktop with touch-friendly UI.",
+        icon: "📱",
+      },
+    ],
+    []
+  );
 
-const categories = [
-  {
-    label: "Pets",
-    value: "Pets",            // DB value
-    description: "Adopt lovable cats, dogs and more.",
-    emoji: "🐶",
-  },
-  {
-    label: "Pet Food",
-    value: "Food",            // DB value == model enum
-    description: "Nutritious food for happy, healthy pets.",
-    emoji: "🍖",
-  },
-  {
-    label: "Accessories",
-    value: "Accessories",     // DB value
-    description: "Leashes, toys, beds and more.",
-    emoji: "🎾",
-  },
-  {
-    label: "Pet Care Products",
-    value: "Care Products",   // DB value
-    description: "Shampoo, grooming tools and health care.",
-    emoji: "🧴",
-  },
-];
+  return (
+    <section className="container mx-auto px-4">
+      <div className="grid gap-4 md:grid-cols-4">
+        {items.map((x) => (
+          <div
+            key={x.t}
+            className="rounded-2xl border border-base-300/60 bg-base-200/50 p-4"
+          >
+            <div className="text-2xl">{x.icon}</div>
+            <h3 className="font-semibold mt-2">{x.t}</h3>
+            <p className="text-sm opacity-70 mt-1">{x.d}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/* ---------------- CATEGORIES ---------------- */
 
 function CategorySection() {
   return (
-    <section className="space-y-4">
-      <div className="text-center">
-        <h2 className="text-2xl md:text-3xl font-semibold mb-1">
-          Browse by Category
+    <section className="container mx-auto px-4 space-y-4">
+      <div className="text-center space-y-1">
+        <h2 className="text-2xl md:text-3xl font-semibold">
+          Popular Categories
         </h2>
         <p className="opacity-70 text-sm md:text-base">
-          Quickly jump into the type of pet or product you are looking for.
+          Browse quickly by category.
         </p>
       </div>
 
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        {categories.map((cat) => (
+        {CATEGORIES.map((cat) => (
           <motion.div
             key={cat.value}
             whileHover={{ y: -4, scale: 1.02 }}
-            className="card bg-base-200 border border-base-300 rounded-2xl shadow-sm cursor-pointer"
+            className="rounded-2xl border border-base-300/60 bg-base-200/60 p-5 shadow-sm h-full"
           >
             <Link
-              // ✅ এখানে এখন DB value পাঠাচ্ছি
-              to={`/category-filtered-product/${encodeURIComponent(
-                cat.value
-              )}`}
-              className="card-body items-start space-y-2"
+              to={`/category-filtered-product/${encodeURIComponent(cat.value)}`}
+              className="flex flex-col h-full"
             >
-              <span className="text-3xl">{cat.emoji}</span>
-              {/* UI তে সুন্দর label */}
-              <h3 className="card-title text-lg">{cat.label}</h3>
-              <p className="text-sm opacity-80">{cat.description}</p>
-              <span className="text-xs font-semibold text-primary mt-1">
-                View {cat.label}
+              <div className="text-3xl">{cat.icon}</div>
+              <h3 className="font-semibold text-lg mt-2">{cat.label}</h3>
+              <p className="text-sm opacity-70 mt-1">{cat.desc}</p>
+              <span className="mt-auto pt-3 text-sm font-semibold text-primary">
+                View {cat.label} →
               </span>
             </Link>
           </motion.div>
@@ -196,69 +353,69 @@ function CategorySection() {
   );
 }
 
-
-/* -------------------- Recent Listings -------------------- */
+/* ---------------- RECENT LISTINGS ---------------- */
 
 function RecentListingsGrid({ items }) {
   if (!items.length) {
     return (
-      <p className="text-sm opacity-70">
-        No listings yet. Be the first to{" "}
-        <Link to="/add-listing" className="link link-primary">
-          add a listing
+      <div className="rounded-2xl border border-base-300/60 bg-base-200/50 p-5">
+        <p className="text-sm opacity-80">
+          No recent listings found. Want to add the first one?
+        </p>
+        <Link to="/add-listing" className="btn btn-primary btn-sm mt-3">
+          Add Listing
         </Link>
-        .
-      </p>
+      </div>
     );
   }
 
   return (
     <motion.div
-      className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
-      initial={{ opacity: 0, y: 15 }}
+      className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
     >
       {items.map((item) => (
-        <RecentCard key={item._id} item={item} />
+        <ListingCard key={item._id} item={item} />
       ))}
     </motion.div>
   );
 }
 
-function RecentCard({ item }) {
+function ListingCard({ item }) {
   const { _id, name, category, location, price, image } = item;
-  const imgSrc =
-    image?.trim() || "https://via.placeholder.com/400x300?text=PawMart+Listing";
 
   return (
-    <article className="card bg-base-200 shadow-md overflow-hidden h-full">
-      <figure className="w-full aspect-[4/3] bg-base-300">
+    <article className="rounded-2xl border border-base-300/60 bg-base-200/60 shadow-sm overflow-hidden h-full flex flex-col">
+      <div className="w-full aspect-[4/3] bg-base-300">
         <img
-          src={imgSrc}
+          src={image?.trim() || fallbackImg}
           alt={name}
           className="w-full h-full object-cover"
-          onError={(e) => {
-            e.currentTarget.src =
-              "https://via.placeholder.com/400x300?text=PawMart+Listing";
-          }}
+          onError={(e) => (e.currentTarget.src = fallbackImg)}
         />
-      </figure>
-      <div className="card-body p-4 md:p-5 flex flex-col">
-        <h3 className="card-title text-base md:text-lg mb-1">{name}</h3>
-        <p className="text-xs opacity-70">
-          <span className="font-semibold">Category:</span> {category}
-        </p>
-        {location && (
+      </div>
+
+      <div className="p-4 flex flex-col gap-2 flex-1">
+        <div className="space-y-1">
+          <h3 className="font-semibold text-base md:text-lg line-clamp-1">
+            {name}
+          </h3>
           <p className="text-xs opacity-70">
-            <span className="font-semibold">Location:</span> {location}
+            <span className="font-semibold">Category:</span> {category}
           </p>
-        )}
-        <p className="mt-1 text-sm font-semibold text-primary">
-          {fmtPrice(price)}
-        </p>
-        <div className="mt-auto pt-3 flex justify-end">
+          <p className="text-xs opacity-70">
+            <span className="font-semibold">Location:</span>{" "}
+            {location || "Not specified"}
+          </p>
+        </div>
+
+        <div className="mt-auto flex items-center justify-between gap-3 pt-2">
+          <span className="text-sm font-semibold text-primary">
+            {fmtPrice(price)}
+          </span>
           <Link to={`/supplies/${_id}`} className="btn btn-primary btn-sm">
-            See Details
+            View Details
           </Link>
         </div>
       </div>
@@ -266,88 +423,318 @@ function RecentCard({ item }) {
   );
 }
 
-/* -------------------- Extra Sections -------------------- */
+/* ---------------- SKELETON ---------------- */
 
-function WhyAdoptSection() {
+function ListingsSkeleton() {
   return (
-    <section className="bg-base-200/60 rounded-2xl p-6 md:p-8 space-y-3">
-      <h2 className="text-2xl font-semibold">Why Adopt from PawMart?</h2>
-      <p className="opacity-80 text-sm md:text-base">
-        Every year, thousands of pets wait for a second chance at happiness.
-        When you adopt from PawMart, you are not just bringing home a pet – you
-        are saving a life and creating space for another rescue.
-      </p>
-      <div className="grid md:grid-cols-3 gap-4 text-sm">
-        <div>
-          <h3 className="font-semibold mb-1">💚 Give a Second Chance</h3>
-          <p className="opacity-80">
-            Rescued pets are loyal, loving and incredibly grateful for a safe
-            home.
-          </p>
+    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      {Array.from({ length: 8 }).map((_, i) => (
+        <div
+          key={i}
+          className="rounded-2xl border border-base-300/60 bg-base-200/60 overflow-hidden"
+        >
+          <div className="skeleton w-full aspect-[4/3]" />
+          <div className="p-4 space-y-3">
+            <div className="skeleton h-4 w-2/3" />
+            <div className="skeleton h-3 w-1/2" />
+            <div className="skeleton h-3 w-3/4" />
+            <div className="flex justify-between items-center pt-2">
+              <div className="skeleton h-4 w-20" />
+              <div className="skeleton h-9 w-28 rounded-full" />
+            </div>
+          </div>
         </div>
-        <div>
-          <h3 className="font-semibold mb-1">🤝 Support Local Rescuers</h3>
-          <p className="opacity-80">
-            Connect with local families, shelters and caregivers in your area.
-          </p>
-        </div>
-        <div>
-          <h3 className="font-semibold mb-1">💸 Transparent &amp; Fair</h3>
-          <p className="opacity-80">
-            Clear information about health, vaccination and adoption terms.
-          </p>
+      ))}
+    </div>
+  );
+}
+
+/* ---------------- HIGHLIGHTS ---------------- */
+
+function Highlights() {
+  const cards = [
+    {
+      t: "Trustworthy listings",
+      d: "Clear metadata—category, location, date, and contact details.",
+      icon: "🧾",
+    },
+    {
+      t: "Fast discovery",
+      d: "Search, filters, sorting and pagination—no endless scrolling pain.",
+      icon: "⚡",
+    },
+    {
+      t: "Dashboard tools",
+      d: "Manage your listings & orders inside a dedicated dashboard layout.",
+      icon: "📊",
+    },
+  ];
+
+  return (
+    <section className="container mx-auto px-4 space-y-4">
+      <div>
+        <h2 className="text-2xl md:text-3xl font-semibold">Why PawMart</h2>
+        <p className="opacity-70 text-sm md:text-base">
+          Designed with clean UX patterns: consistent cards, proper states,
+          responsive layout, and dark mode contrast.
+        </p>
+      </div>
+
+      <div className="grid gap-5 md:grid-cols-3">
+        {cards.map((c) => (
+          <div
+            key={c.t}
+            className="rounded-2xl border border-base-300/60 bg-base-200/60 p-5"
+          >
+            <div className="text-3xl">{c.icon}</div>
+            <h3 className="font-semibold text-lg mt-2">{c.t}</h3>
+            <p className="text-sm opacity-70 mt-1">{c.d}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/* ---------------- STATS ---------------- */
+
+function Stats() {
+  const stats = [
+    { k: "Listings", v: "Real-time", d: "Data from MongoDB API", icon: "🗂️" },
+    { k: "Auth", v: "Firebase", d: "Token-based protected routes", icon: "🔐" },
+    {
+      k: "UI",
+      v: "Light/Dark",
+      d: "Accessible contrast maintained",
+      icon: "🌗",
+    },
+    { k: "UX", v: "Responsive", d: "Mobile-first layout system", icon: "📱" },
+  ];
+
+  return (
+    <section className="container mx-auto px-4">
+      <div className="rounded-3xl border border-base-300/60 bg-base-200/50 p-6 md:p-8">
+        <h2 className="text-2xl md:text-3xl font-semibold">
+          Platform Statistics
+        </h2>
+        <p className="opacity-70 text-sm md:text-base mt-1">
+          A quick snapshot of the platform’s core foundations.
+        </p>
+
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mt-6">
+          {stats.map((s) => (
+            <div
+              key={s.k}
+              className="rounded-2xl border border-base-300/60 bg-base-100/70 p-4"
+            >
+              <div className="text-2xl">{s.icon}</div>
+              <div className="mt-2 text-xs uppercase tracking-wide opacity-70">
+                {s.k}
+              </div>
+              <div className="text-lg font-semibold">{s.v}</div>
+              <div className="text-sm opacity-70 mt-1">{s.d}</div>
+            </div>
+          ))}
         </div>
       </div>
     </section>
   );
 }
 
-function PetHeroesSection() {
-  const heroes = [
+/* ---------------- HOW IT WORKS ---------------- */
+
+function HowItWorks() {
+  const steps = [
     {
-      name: "Ayesha & Milo",
-      role: "Rescue Adopter",
-      story:
-        "Adopted a street pup and now volunteers every weekend to help other dogs.",
+      t: "Explore",
+      d: "Search and filter listings by category and location.",
+      icon: "🔎",
     },
     {
-      name: "Samiul & Coco",
-      role: "Foster Parent",
-      story:
-        "Provides temporary homes for abandoned kittens until they find a family.",
+      t: "View Details",
+      d: "Check images, specs, and adoption/order info.",
+      icon: "🧾",
     },
     {
-      name: "Paw Care BD",
-      role: "Community Caregiver",
-      story:
-        "Local group that vaccinates and feeds street dogs and cats regularly.",
+      t: "Adopt/Order",
+      d: "Place an order with validation & secure auth.",
+      icon: "✅",
     },
   ];
 
   return (
-    <section className="space-y-4">
-      <h2 className="text-2xl md:text-3xl font-semibold">
-        Meet Our Pet Heroes
-      </h2>
-      <p className="opacity-80 text-sm md:text-base max-w-2xl">
-        Behind every successful adoption, there is a hero – a person or group
-        who chose kindness. Here are a few of our community members making a
-        difference.
-      </p>
-
+    <section className="container mx-auto px-4 space-y-4">
+      <h2 className="text-2xl md:text-3xl font-semibold">How it works</h2>
       <div className="grid gap-5 md:grid-cols-3">
-        {heroes.map((h) => (
+        {steps.map((s) => (
           <div
-            key={h.name}
-            className="bg-base-200/70 rounded-2xl p-5 border border-base-300 space-y-2"
+            key={s.t}
+            className="rounded-2xl border border-base-300/60 bg-base-200/60 p-5"
           >
-            <h3 className="font-semibold text-lg">{h.name}</h3>
-            <p className="text-xs uppercase tracking-wide opacity-70">
-              {h.role}
-            </p>
-            <p className="text-sm opacity-80">{h.story}</p>
+            <div className="text-3xl">{s.icon}</div>
+            <h3 className="font-semibold text-lg mt-2">{s.t}</h3>
+            <p className="text-sm opacity-70 mt-1">{s.d}</p>
           </div>
         ))}
+      </div>
+    </section>
+  );
+}
+
+/* ---------------- TESTIMONIALS ---------------- */
+
+function Testimonials() {
+  const data = [
+    {
+      n: "Ayesha",
+      r: "Rescue Adopter",
+      t: "The details page made adoption decisions easy—clear info and fast contact.",
+    },
+    {
+      n: "Samiul",
+      r: "Foster Parent",
+      t: "Dashboard helped me manage posts and follow orders without confusion.",
+    },
+    {
+      n: "PawCare BD",
+      r: "Community Caregiver",
+      t: "Love the clean UI and dark mode—feels like a real product.",
+    },
+  ];
+
+  return (
+    <section className="container mx-auto px-4 space-y-4">
+      <h2 className="text-2xl md:text-3xl font-semibold">Testimonials</h2>
+      <div className="grid gap-5 md:grid-cols-3">
+        {data.map((x) => (
+          <div
+            key={x.n}
+            className="rounded-2xl border border-base-300/60 bg-base-200/60 p-5"
+          >
+            <p className="text-sm opacity-80 leading-relaxed">“{x.t}”</p>
+            <div className="mt-4">
+              <div className="font-semibold">{x.n}</div>
+              <div className="text-xs uppercase tracking-wide opacity-60">
+                {x.r}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/* ---------------- FAQ ---------------- */
+
+function FAQ() {
+  const faqs = [
+    {
+      q: "Is adoption free?",
+      a: "If a listing price is 0, it shows as Free for adoption. Orders are still tracked for transparency.",
+    },
+    {
+      q: "Are dashboard routes public?",
+      a: "No. Add Listing, My Listings, and My Orders are protected by Firebase auth.",
+    },
+    {
+      q: "What happens if an image link breaks?",
+      a: "The UI automatically falls back to a local fallback SVG image to keep layout consistent.",
+    },
+  ];
+
+  return (
+    <section className="container mx-auto px-4 space-y-4">
+      <h2 className="text-2xl md:text-3xl font-semibold">FAQ</h2>
+
+      <div className="grid gap-3">
+        {faqs.map((f) => (
+          <div
+            key={f.q}
+            className="collapse collapse-arrow rounded-2xl border border-base-300/60 bg-base-200/60"
+          >
+            <input type="checkbox" />
+            <div className="collapse-title font-semibold">{f.q}</div>
+            <div className="collapse-content">
+              <p className="text-sm opacity-80">{f.a}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/* ---------------- NEWSLETTER ---------------- */
+
+function Newsletter() {
+  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!email.trim()) return;
+    setLoading(true);
+    await new Promise((r) => setTimeout(r, 700));
+    setLoading(false);
+    setEmail("");
+  };
+
+  return (
+    <section className="container mx-auto px-4">
+      <div className="rounded-3xl border border-base-300/60 bg-base-200/50 p-6 md:p-8">
+        <h2 className="text-2xl md:text-3xl font-semibold">Newsletter</h2>
+        <p className="opacity-70 text-sm md:text-base mt-1 max-w-2xl">
+          Get updates on new listings, adoption tips, and pet care essentials.
+        </p>
+
+        <form
+          onSubmit={submit}
+          className="mt-5 flex flex-col sm:flex-row gap-3"
+        >
+          <input
+            className="input input-bordered w-full"
+            placeholder="Enter your email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            disabled={loading}
+          />
+          <button
+            className="btn btn-primary"
+            disabled={loading || !email.trim()}
+          >
+            {loading ? "Subscribing..." : "Subscribe"}
+          </button>
+        </form>
+      </div>
+    </section>
+  );
+}
+
+/* ---------------- FINAL CTA ---------------- */
+
+function FinalCTA() {
+  return (
+    <section className="container mx-auto px-4">
+      <div className="rounded-3xl border border-base-300/60 bg-base-100/70 p-6 md:p-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div className="space-y-2">
+          <h2 className="text-2xl md:text-3xl font-semibold">
+            Ready to post your first listing?
+          </h2>
+          <p className="opacity-70 text-sm md:text-base max-w-2xl">
+            Add a pet or pet product with clean validation and consistent UI.
+            Keep the community updated with real info.
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <Link to="/add-listing" className="btn btn-primary">
+            Add Listing
+          </Link>
+          <Link to="/supplies" className="btn btn-outline">
+            Explore
+          </Link>
+        </div>
       </div>
     </section>
   );

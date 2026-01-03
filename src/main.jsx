@@ -1,209 +1,82 @@
-// src/main.jsx
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { RouterProvider, createBrowserRouter, defer } from "react-router-dom";
-import { AuthProvider } from "./context/AuthContext.jsx";
-import App from "./App.jsx";
-import DebugRouteError from "./DebugRouteError.jsx";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import "./index.css";
-import ToastProvider from "./components/ui/Toast.jsx";
 
-// 🔹 API base URL: Netlify te VITE_API_URL set thakle oita use hobe,
-// na thakle fallback hisebe localhost use korbe (local dev er jonno)
-const API = import.meta.env.VITE_API_URL || "http://localhost:5000";
+import App from "./App.jsx";
 
-// ---------- Helper: safe JSON fetch ----------
-async function safeJsonFetch(url, options) {
-  const res = await fetch(url, options);
-  const contentType = res.headers.get("content-type") || "";
-  const text = await res.text();
+import Home from "./components/pages/Home.jsx";
+import PetsSupplies from "./components/pages/PetsSupplies.jsx";
+import About from "./components/pages/About.jsx";
+import Contact from "./components/pages/Contact.jsx";
+import Help from "./components/pages/Help.jsx";
+import Login from "./components/pages/Login.jsx";
+import Register from "./components/pages/Register.jsx";
+import ListingDetails from "./components/pages/ListingDetails.jsx";
+import AddListing from "./components/pages/AddListing.jsx";
+import MyListings from "./components/pages/MyListings.jsx";
+import MyOrders from "./components/pages/MyOrders.jsx";
+import NotFound from "./components/pages/NotFound.jsx";
 
-  if (!res.ok) {
-    throw new Error(`API Error: ${res.status} ${res.statusText}\n${text}`);
-  }
+import PrivateRoute from "./routes/PrivateRoute.jsx";
+import { homeLoader, listingDetailsLoader } from "./routes/loaders.js";
 
-  if (
-    contentType.includes("text/html") ||
-    text.trim().startsWith("<!DOCTYPE")
-  ) {
-    throw new Error(
-      `Server returned HTML instead of JSON for ${url}. Check VITE_API_URL and backend server.`
-    );
-  }
+import AuthProvider from "./context/AuthContext.jsx"; // ✅ default export provider
 
-  try {
-    return JSON.parse(text);
-  } catch {
-    throw new Error(`Failed to parse JSON from ${url}. Raw response:\n${text}`);
-  }
-}
+import DashboardLayout from "./components/dashboard/DashboardLayout.jsx";
+import DashboardHome from "./components/dashboard/DashboardHome.jsx";
+import Profile from "./components/dashboard/Profile.jsx";
 
-// ---------- Router ----------
 const router = createBrowserRouter([
   {
     path: "/",
     element: <App />,
-    errorElement: <DebugRouteError />,
+    errorElement: <NotFound />,
     children: [
-      // HOME (recent listings)
-      {
-        index: true,
-        loader: () =>
-          defer({
-            // 🔁 CREDENTIALS REMOVE: public GET, no cookies needed
-            recentListings: safeJsonFetch(`${API}/api/listings?limit=6`),
-          }),
-        async lazy() {
-          const m = await import("./components/pages/Home.jsx");
-          return { Component: m.default };
-        },
-      },
+      { index: true, element: <Home />, loader: homeLoader },
+      { path: "explore", element: <PetsSupplies /> },
+      { path: "about", element: <About /> },
+      { path: "contact", element: <Contact /> },
+      { path: "help", element: <Help /> },
+      { path: "login", element: <Login /> },
+      { path: "register", element: <Register /> },
 
-      // PUBLIC: Supplies list
-      {
-        path: "supplies",
-        loader: () =>
-          defer({
-            // 🔁 CREDENTIALS REMOVE
-            supplies: safeJsonFetch(`${API}/api/listings`),
-          }),
-        async lazy() {
-          const m = await import("./components/pages/PetsSupplies.jsx");
-          return { Component: m.default };
-        },
-      },
-
-      // PUBLIC: Category-filtered Supplies
-      {
-        path: "category-filtered-product/:categoryName",
-        loader: ({ params }) =>
-          defer({
-            // 🔁 CREDENTIALS REMOVE
-            supplies: safeJsonFetch(
-              `${API}/api/listings?category=${encodeURIComponent(
-                params.categoryName
-              )}`
-            ),
-          }),
-        async lazy() {
-          const m = await import("./components/pages/PetsSupplies.jsx");
-          return { Component: m.default };
-        },
-      },
-
-      // PUBLIC: Listing Details
       {
         path: "supplies/:id",
-        loader: ({ params }) =>
-          safeJsonFetch(`${API}/api/listings/${params.id}`),
-        async lazy() {
-          const m = await import("./components/pages/ListingDetails.jsx");
-          return { Component: m.default };
-        },
+        element: <ListingDetails />,
+        loader: listingDetailsLoader,
       },
 
-      // AUTH
-      {
-        path: "login",
-        async lazy() {
-          const m = await import("./components/pages/Login.jsx");
-          return { Component: m.default };
-        },
-      },
-      {
-        path: "register",
-        async lazy() {
-          const m = await import("./components/pages/Register.jsx");
-          return { Component: m.default };
-        },
-      },
-
-      // PROTECTED: My Listings
-      {
-        path: "my-listings",
-        async lazy() {
-          const [PR, Page] = await Promise.all([
-            import("./routes/PrivateRoute.jsx"),
-            import("./components/pages/MyListings.jsx"),
-          ]);
-          return {
-            element: (
-              <PR.default>
-                <Page.default />
-              </PR.default>
-            ),
-          };
-        },
-      },
-
-      // PROTECTED: Add Listing
       {
         path: "add-listing",
-        async lazy() {
-          const [PR, Page] = await Promise.all([
-            import("./routes/PrivateRoute.jsx"),
-            import("./components/pages/AddLisiting.jsx"), // jei file name chilo oitai rakhlam
-          ]);
-          return {
-            element: (
-              <PR.default>
-                <Page.default />
-              </PR.default>
-            ),
-          };
-        },
+        element: (
+          <PrivateRoute>
+            <AddListing />
+          </PrivateRoute>
+        ),
       },
 
-      // PROTECTED: My Orders
       {
-        path: "my-orders",
-        loader: async () => {
-          const token = localStorage.getItem("idToken");
-          if (!token) {
-            throw new Error(
-              "No token found. Please login to view your orders."
-            );
-          }
-
-          // 🔹 Orders protected: Firebase token header e jacche
-          return safeJsonFetch(`${API}/api/orders`, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
-        },
-        async lazy() {
-          const [PR, Page] = await Promise.all([
-            import("./routes/PrivateRoute.jsx"),
-            import("./components/pages/MyOrders.jsx"),
-          ]);
-          return {
-            element: (
-              <PR.default>
-                <Page.default />
-              </PR.default>
-            ),
-          };
-        },
-      },
-
-      // 404 Page
-      {
-        path: "*",
-        async lazy() {
-          const m = await import("./components/pages/NotFound.jsx");
-          return { Component: m.default };
-        },
+        path: "dashboard",
+        element: (
+          <PrivateRoute>
+            <DashboardLayout />
+          </PrivateRoute>
+        ),
+        children: [
+          { index: true, element: <DashboardHome /> },
+          { path: "profile", element: <Profile /> },
+          { path: "my-listings", element: <MyListings /> },
+          { path: "my-orders", element: <MyOrders /> },
+        ],
       },
     ],
   },
 ]);
 
-// ---------- Render ----------
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <AuthProvider>
-      <ToastProvider />
       <RouterProvider router={router} />
     </AuthProvider>
   </React.StrictMode>

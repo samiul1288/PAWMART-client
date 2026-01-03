@@ -1,20 +1,18 @@
 import { useState } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
+import useAuth from "../../hooks/useAuth";
 import { toast } from "react-hot-toast";
 
-
-
 export default function Login() {
-  // dhore nilam useAuth e googleLogin ache
   const { login, loginWithGoogle } = useAuth();
+
   const [f, setF] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
+
   const nav = useNavigate();
   const loc = useLocation();
   const from = loc.state?.from?.pathname || "/";
 
-  // === Password Validation ===
   const validatePassword = (password) => {
     if (password.length < 6) return "Password must be at least 6 characters";
     if (!/[A-Z]/.test(password))
@@ -24,18 +22,17 @@ export default function Login() {
     return null;
   };
 
+  const fillDemo = () => {
+    setF({ email: "demo.user@pawmart.app", password: "DemoUser1" });
+    toast.success("Demo credentials filled");
+  };
+
   const submit = async (e) => {
     e.preventDefault();
+    if (!f.email) return toast.error("Email is required");
 
-    if (!f.email) {
-      toast.error("Email is required");
-      return;
-    }
     const pwdError = validatePassword(f.password);
-    if (pwdError) {
-      toast.error(pwdError);
-      return;
-    }
+    if (pwdError) return toast.error(pwdError);
 
     try {
       setLoading(true);
@@ -99,6 +96,18 @@ export default function Login() {
                 className={loading ? "btn-disabled" : ""}
               />
 
+              {/* Demo Credentials */}
+              <button
+                type="button"
+                className="google-btn"
+                onClick={fillDemo}
+                disabled={loading}
+                style={{ marginTop: 10 }}
+              >
+                <span className="google-icon">★</span>
+                <span>Use Demo Credentials</span>
+              </button>
+
               {/* Google Sign In */}
               <button
                 type="button"
@@ -116,11 +125,17 @@ export default function Login() {
                 <span>or</span>
               </div>
 
+              {/* ✅ No broken route */}
               <div className="group">
-                <Link to="/forgot-password">forget password</Link>
+                <Link to="/contact">Need help?</Link>
                 <Link to="/register">sign up</Link>
               </div>
             </form>
+
+            <p className="text-xs opacity-70" style={{ marginTop: 10 }}>
+              Demo account must exist in Firebase Auth with the same
+              credentials.
+            </p>
           </div>
         </div>
       </div>

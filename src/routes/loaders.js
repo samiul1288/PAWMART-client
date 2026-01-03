@@ -1,37 +1,35 @@
-// src/routes/loaders.js
+// client/src/routes/loaders.js
 import { defer } from "react-router-dom";
 
-const API = import.meta.env.VITE_API_URL; // e.g. http://localhost:5000/api
+const API = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
-// Home -> recent 6 listings
+// ✅ Home: recent listings promise
 export function homeLoader() {
-  const recentPromise =+ fetch(`${API}/api/listings`).then((res) =>
+  const recentPromise = fetch(`${API}/api/listings?limit=8`).then((res) =>
     res.json()
   );
-
-  return defer({
-    recentListings: recentPromise,
-  });
+  return defer({ recentListings: recentPromise });
 }
 
-// All supplies
-export function suppliesLoader() {
-  const suppliesPromise = fetch(`${API}/listings`).then((res) => res.json());
-
-  return defer({
-    supplies: suppliesPromise,
-  });
+// ✅ Explore: supports query string (optional)
+export function suppliesLoader({ request }) {
+  const url = new URL(request.url);
+  const qs = url.searchParams.toString();
+  const listPromise = fetch(`${API}/api/listings?${qs}`).then((res) =>
+    res.json()
+  );
+  return defer({ listings: listPromise });
 }
 
-// Category filtered supplies
-export function categorySuppliesLoader({ params }) {
-  const category = params.categoryName;
+// ✅ Listing Details (public)
+export async function listingDetailsLoader({ params }) {
+  const res = await fetch(`${API}/api/listings/${params.id}`);
+  const data = await res.json();
 
-  const suppliesPromise = fetch(
-    `${API}/listings?category=${encodeURIComponent(category)}`
-  ).then((res) => res.json());
-
-  return defer({
-    supplies: suppliesPromise,
-  });
+  if (!res.ok) {
+    throw new Response(data?.error || "Listing not found", {
+      status: res.status,
+    });
+  }
+  return data;
 }

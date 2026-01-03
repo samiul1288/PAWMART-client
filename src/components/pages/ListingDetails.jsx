@@ -1,385 +1,395 @@
-// src/components/pages/ListingDetails.jsx
-import { useLoaderData, useNavigate, useLocation } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useLoaderData } from "react-router-dom";
+import fallbackImg from "../../assets/fallback-listing.svg";
 import useAuth from "../../hooks/useAuth";
-import { toast } from "react-hot-toast";
-import Modal from "../ui/Modal";
+import { toastSuccess, toastError } from "../ui/Toast";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
-const fmtPrice = (p) => (Number(p) === 0 ? "Free for adoption" : `$${p}`);
-const fmtDate = (d) =>
-  d ? new Date(d).toLocaleDateString("en-GB") : "Not specified";
+function Stars({ value = 0 }) {
+  const v = Math.round(Number(value) || 0);
+  return (
+    <div className="flex gap-1">
+      {Array.from({ length: 5 }).map((_, i) => (
+        <span key={i} className={i < v ? "opacity-100" : "opacity-30"}>
+          ⭐
+        </span>
+      ))}
+    </div>
+  );
+}
 
 export default function ListingDetails() {
   const listing = useLoaderData();
   const { user } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
 
-  const [orderOpen, setOrderOpen] = useState(false);
-  const [orderForm, setOrderForm] = useState({
-    buyerName: "",
-    email: "",
-    quantity: 1,
-    address: "",
-    phone: "",
-    date: "",
-    notes: "",
-  });
-  const [submitting, setSubmitting] = useState(false);
+  const images = useMemo(() => {
+    const arr = Array.isArray(listing?.images) ? listing.images : [];
+    const single = listing?.image?.trim() ? [listing.image.trim()] : [];
+    const merged = [...arr, ...single].filter(Boolean);
+    return merged.length ? Array.from(new Set(merged)) : [fallbackImg];
+  }, [listing]);
+
+  const [active, setActive] = useState(0);
+
+  // reviews
+  const [reviews, setReviews] = useState([]);
+  const [rLoading, setRLoading] = useState(true);
+  const [posting, setPosting] = useState(false);
+  const [form, setForm] = useState({ rating: 5, comment: "", userName: "" });
+
+  // related
+  const [related, setRelated] = useState([]);
+  const [relLoading, setRelLoading] = useState(true);
+
+  const loadReviews = async () => {
+    try {
+      setRLoading(true);
+      const res = await fetch(`${API}/api/reviews/${listing?._id}`);
+      const data = await res.json();
+      setReviews(Array.isArray(data) ? data : []);
+    } catch {
+      setReviews([]);
+    } finally {
+      setRLoading(false);
+    }
+  };
+
+  const loadRelated = async () => {
+    try {
+      setRelLoading(true);
+      const qs = new URLSearchParams();
+      if (listing?.category) qs.set("category", listing.category);
+      qs.set("limit", "8");
+      qs.set("sort", "newest");
+
+      const res = await fetch(`${API}/api/listings?${qs.toString()}`);
+      const data = await res.json();
+      const list = Array.isArray(data) ? data : data?.data || [];
+      setRelated(list.filter((x) => x?._id !== listing?._id).slice(0, 4));
+    } catch {
+      setRelated([]);
+    } finally {
+      setRelLoading(false);
+    }
+  };
 
   useEffect(() => {
-    if (user) {
-      setOrderForm((prev) => ({
-        ...prev,
-        buyerName: user.displayName || "",
-        email: user.email || "",
-      }));
-    }
-  }, [user]);
+    if (!listing?._id) return;
+    loadReviews();
+    loadRelated();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [listing?._id]);
 
-  if (!listing) {
-    return (
-      <section className="container mx-auto px-3 py-10">
-        <div className="alert alert-error">
-          <span>Listing not found.</span>
-        </div>
-      </section>
-    );
-  }
-
-  const {
-    _id,
-    name,
-    category,
-    price = 0,
-    image,
-    description,
-    email,
-    location: loc,
-    date,
-  } = listing;
-
-  const handleBack = () => {
-    navigate(-1);
-  };
-
-  // 👉 Adopt / Order button click → show form modal (if logged in)
-  const handleAdoptClick = () => {
-    if (!user) {
-      toast.error("Please login to place an order.");
-      navigate("/login", { state: { from: location } });
-      return;
-    }
-    setOrderOpen(true);
-  };
-
-  // 👉 Final submit order
-  const handleSubmitOrder = async (e) => {
+  const submitReview = async (e) => {
     e.preventDefault();
-
-    if (!user) {
-      toast.error("Please login to place an order.");
-      navigate("/login", { state: { from: location } });
-      return;
-    }
-
-    if (!orderForm.address.trim()) {
-      toast.error("Address is required");
-      return;
-    }
-    if (!orderForm.phone.trim()) {
-      toast.error("Phone is required");
-      return;
-    }
+    if (!user) return toastError("Login required to post a review.");
+    if (!form.comment.trim()) return toastError("Comment is required.");
 
     try {
-      setSubmitting(true);
-      const token = await user.getIdToken();
+      setPosting(true);
+      const token = localStorage.getItem("idToken");
 
-      const itemPrice = Number(price) || 0;
-      const qty = Number(orderForm.quantity) || 1;
-      const total = itemPrice * qty;
-
-      const payload = {
-        items: [
-          {
-            listingId: _id,
-            qty,
-            price: itemPrice,
-          },
-        ],
-        total, // 0 হলে free adoption
-        // extra fields – document / schema অনুজায়ী
-        buyerName: orderForm.buyerName,
-        email: orderForm.email,
-        address: orderForm.address,
-        phone: orderForm.phone,
-        additionalNotes: orderForm.notes,
-        date: orderForm.date || null,
-        productName: name,
-      };
-
-      const res = await fetch(`${API}/api/orders`, {
+      const res = await fetch(`${API}/api/reviews/${listing._id}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          rating: Number(form.rating),
+          comment: form.comment.trim(),
+          userName: form.userName.trim() || user.displayName || user.email,
+        }),
       });
 
-      const text = await res.text();
+      const data = await res.json();
+      if (!res.ok)
+        throw new Error(
+          data?.error || data?.message || "Failed to post review"
+        );
 
-      if (!res.ok) {
-        console.error("❌ Order API error:", text);
-        let msg = "Failed to place order.";
-        try {
-          const json = JSON.parse(text);
-          if (json.error) msg = json.error;
-        } catch {
-          // ignore
-        }
-        toast.error(msg);
-        return;
-      }
-
-      toast.success("Order placed successfully!");
-      setOrderOpen(false);
-      navigate("/my-orders");
+      toastSuccess("Review posted!");
+      setForm({ rating: 5, comment: "", userName: "" });
+      await loadReviews();
     } catch (err) {
-      console.error("❌ Order request failed:", err);
-      toast.error("Could not reach server. Please try again.");
+      toastError(err.message);
     } finally {
-      setSubmitting(false);
+      setPosting(false);
     }
   };
 
-  return (
-    <section className="container mx-auto px-3 py-8">
-      {/* Top bar: back button */}
-      <div className="mb-6 flex items-center justify-between gap-3">
-        <button onClick={handleBack} className="btn btn-ghost btn-sm">
-          ← Back
-        </button>
+  const posted = listing?.createdAt
+    ? new Date(listing.createdAt).toLocaleDateString()
+    : "—";
 
-        {user && (
-          <span className="text-xs md:text-sm opacity-70">
-            Viewing as <span className="font-semibold">{user.email}</span>
+  return (
+    <section className="container mx-auto px-3 py-8 space-y-8">
+      {/* Header */}
+      <div className="space-y-2">
+        <h1 className="text-3xl md:text-4xl font-bold">{listing?.name}</h1>
+
+        <div className="flex flex-wrap gap-3 items-center text-sm opacity-80">
+          <span className="px-3 py-1 rounded-full bg-base-200 border border-base-300">
+            {listing?.category}
           </span>
-        )}
+          {listing?.location && <span>📍 {listing.location}</span>}
+          <span>🗓️ {posted}</span>
+          <span className="flex items-center gap-2">
+            <Stars value={listing?.avgRating || 0} />
+            <span>({listing?.reviewCount || 0})</span>
+          </span>
+        </div>
       </div>
 
-      {/* Main card */}
-      <div className="card lg:card-side bg-base-200 shadow-xl overflow-hidden">
-        {/* Left: Image */}
-        <figure className="lg:w-1/2 w-full bg-base-300">
-          {image ? (
+      {/* Gallery + Key Info */}
+      <div className="grid gap-6 lg:grid-cols-12">
+        <div className="lg:col-span-7 space-y-3">
+          <div className="bg-base-200 border border-base-300 rounded-2xl overflow-hidden">
             <img
-              src={image}
-              alt={name}
-              className="w-full h-full max-h-[480px] object-contain p-4"
+              src={images[active] || fallbackImg}
+              alt="Listing media"
+              className="w-full aspect-[16/10] object-cover"
+              onError={(e) => (e.currentTarget.src = fallbackImg)}
             />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-sm opacity-60">
-              No image provided
-            </div>
-          )}
-        </figure>
-
-        {/* Right: Details */}
-        <div className="card-body lg:w-1/2 p-6 space-y-3">
-          <h1 className="card-title text-2xl md:text-3xl mb-2">{name}</h1>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
-            <DetailItem label="Category" value={category} />
-            <DetailItem label="Location" value={loc || "Not specified"} />
-            <DetailItem label="Owner Email" value={email} />
-            <DetailItem label="Available From" value={fmtDate(date)} />
           </div>
 
-          <p className="mt-2 text-lg font-semibold text-primary">
-            {fmtPrice(price)}
-          </p>
+          <div className="grid grid-cols-4 gap-3">
+            {images.slice(0, 8).map((img, i) => (
+              <button
+                key={i}
+                className={[
+                  "rounded-xl overflow-hidden border",
+                  i === active ? "border-primary" : "border-base-300",
+                ].join(" ")}
+                onClick={() => setActive(i)}
+              >
+                <img
+                  src={img}
+                  alt={`thumb-${i}`}
+                  className="w-full aspect-[4/3] object-cover"
+                  onError={(e) => (e.currentTarget.src = fallbackImg)}
+                />
+              </button>
+            ))}
+          </div>
+        </div>
 
-          {description && (
-            <div className="mt-3">
-              <h2 className="font-semibold mb-1">Description</h2>
-              <p className="text-sm leading-relaxed opacity-90">
-                {description}
+        <div className="lg:col-span-5 space-y-4">
+          <div className="card bg-base-200 border border-base-300 rounded-2xl">
+            <div className="card-body space-y-2">
+              <h3 className="font-semibold text-lg flex items-center gap-2">
+                <span>📌</span> Key Information
+              </h3>
+
+              <div className="text-sm opacity-85 space-y-1">
+                <p>
+                  <span className="font-semibold">Status:</span>{" "}
+                  {listing?.status || "Available"}
+                </p>
+                <p>
+                  <span className="font-semibold">Price:</span>{" "}
+                  {Number(listing?.price)
+                    ? `$${listing.price}`
+                    : "Free for adoption"}
+                </p>
+                <p>
+                  <span className="font-semibold">Location:</span>{" "}
+                  {listing?.location || "—"}
+                </p>
+              </div>
+
+              <div className="pt-2">
+                <p className="text-xs uppercase tracking-wide opacity-70 mb-1">
+                  Rules / Notes
+                </p>
+                <ul className="text-sm opacity-85 list-disc pl-5 space-y-1">
+                  <li>Meet in a safe public place if possible.</li>
+                  <li>Verify pet health and vaccination details.</li>
+                  <li>Be respectful and follow community guidelines.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div className="card bg-base-200 border border-base-300 rounded-2xl">
+            <div className="card-body">
+              <h3 className="font-semibold text-lg flex items-center gap-2">
+                <span>🧾</span> Overview
+              </h3>
+              <p className="opacity-85 text-sm whitespace-pre-line">
+                {listing?.description}
               </p>
             </div>
-          )}
-
-          <div className="mt-5 flex flex-wrap gap-3">
-            <button
-              className="btn btn-primary"
-              onClick={handleAdoptClick}
-              title={
-                user
-                  ? "Proceed to adopt / order this listing"
-                  : "Login to place an order"
-              }
-            >
-              Adopt / Order Now
-            </button>
-
-            {!user && (
-              <p className="text-xs opacity-70">
-                You must be logged in to place an order.
-              </p>
-            )}
           </div>
         </div>
       </div>
 
-      {/* Order Modal */}
-      <Modal
-        open={orderOpen}
-        onClose={() => !submitting && setOrderOpen(false)}
-        title="Confirm Adoption / Order"
-        subtitle={`Fill in your details to place order for "${name}".`}
-        size="md"
-        footer={
-          <p className="text-xs opacity-70">
-            Total will be calculated as price × quantity.
-          </p>
-        }
-      >
-        <form onSubmit={handleSubmitOrder} className="space-y-3">
-          <div className="grid md:grid-cols-2 gap-3">
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text text-xs">Buyer Name</span>
-              </label>
-              <input
-                type="text"
-                className="input input-bordered input-sm"
-                value={orderForm.buyerName}
-                onChange={(e) =>
-                  setOrderForm({ ...orderForm, buyerName: e.target.value })
-                }
-                placeholder="Your name"
-              />
-            </div>
+      {/* Reviews */}
+      <div className="space-y-4">
+        <h2 className="text-2xl font-bold flex items-center gap-2">
+          <span>💬</span> Reviews & Ratings
+        </h2>
 
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text text-xs">Email</span>
-              </label>
-              <input
-                type="email"
-                className="input input-bordered input-sm"
-                value={orderForm.email}
-                onChange={(e) =>
-                  setOrderForm({ ...orderForm, email: e.target.value })
-                }
-                placeholder="you@example.com"
-              />
-            </div>
+        <div className="grid gap-6 lg:grid-cols-12">
+          <div className="lg:col-span-7">
+            {rLoading ? (
+              <div className="card bg-base-200 border border-base-300 rounded-2xl">
+                <div className="card-body">
+                  <span className="loading loading-spinner" />
+                </div>
+              </div>
+            ) : reviews.length ? (
+              <div className="space-y-3">
+                {reviews.map((r) => (
+                  <div
+                    key={r._id}
+                    className="card bg-base-200 border border-base-300 rounded-2xl"
+                  >
+                    <div className="card-body">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="font-semibold">
+                          {r.userName || r.userEmail || "User"}
+                        </p>
+                        <Stars value={r.rating} />
+                      </div>
+                      <p className="text-sm opacity-85">{r.comment}</p>
+                      <p className="text-xs opacity-60">
+                        {new Date(r.createdAt).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="alert">
+                <span>No reviews yet. Be the first to review!</span>
+              </div>
+            )}
           </div>
 
-          <div className="grid md:grid-cols-2 gap-3">
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text text-xs">Quantity</span>
-              </label>
-              <input
-                type="number"
-                min="1"
-                className="input input-bordered input-sm"
-                value={orderForm.quantity}
-                onChange={(e) =>
-                  setOrderForm({ ...orderForm, quantity: e.target.value })
-                }
-              />
-            </div>
-
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text text-xs">Preferred Date</span>
-              </label>
-              <input
-                type="date"
-                className="input input-bordered input-sm"
-                value={orderForm.date}
-                onChange={(e) =>
-                  setOrderForm({ ...orderForm, date: e.target.value })
-                }
-              />
-            </div>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-3">
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text text-xs">Address *</span>
-              </label>
-              <input
-                type="text"
-                className="input input-bordered input-sm"
-                value={orderForm.address}
-                onChange={(e) =>
-                  setOrderForm({ ...orderForm, address: e.target.value })
-                }
-                placeholder="Full address"
-                required
-              />
-            </div>
-
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text text-xs">Phone *</span>
-              </label>
-              <input
-                type="text"
-                className="input input-bordered input-sm"
-                value={orderForm.phone}
-                onChange={(e) =>
-                  setOrderForm({ ...orderForm, phone: e.target.value })
-                }
-                placeholder="01XXXXXXXXX"
-                required
-              />
-            </div>
-          </div>
-
-          <div className="form-control">
-            <label className="label">
-              <span className="label-text text-xs">Additional Notes</span>
-            </label>
-            <textarea
-              className="textarea textarea-bordered textarea-sm"
-              rows={3}
-              value={orderForm.notes}
-              onChange={(e) =>
-                setOrderForm({ ...orderForm, notes: e.target.value })
-              }
-              placeholder="Any extra info (e.g. time preference, special handling)..."
-            />
-          </div>
-
-          <div className="flex justify-end">
-            <button
-              type="submit"
-              className="btn btn-primary btn-sm"
-              disabled={submitting}
+          <div className="lg:col-span-5">
+            <form
+              onSubmit={submitReview}
+              className="card bg-base-200 border border-base-300 rounded-2xl"
             >
-              {submitting ? "Placing order..." : "Confirm Order"}
-            </button>
-          </div>
-        </form>
-      </Modal>
-    </section>
-  );
-}
+              <div className="card-body space-y-3">
+                <h3 className="font-semibold text-lg flex items-center gap-2">
+                  <span>✍️</span> Write a review
+                </h3>
 
-function DetailItem({ label, value }) {
-  return (
-    <p className="text-sm">
-      <span className="font-semibold">{label}:</span>{" "}
-      <span className="opacity-80">{value}</span>
-    </p>
+                <input
+                  className="input input-bordered"
+                  value={form.userName}
+                  onChange={(e) =>
+                    setForm({ ...form, userName: e.target.value })
+                  }
+                  placeholder="Your name (optional)"
+                  disabled={posting}
+                />
+
+                <select
+                  className="select select-bordered"
+                  value={form.rating}
+                  onChange={(e) => setForm({ ...form, rating: e.target.value })}
+                  disabled={posting}
+                >
+                  {[5, 4, 3, 2, 1].map((n) => (
+                    <option key={n} value={n}>
+                      {n} Star
+                    </option>
+                  ))}
+                </select>
+
+                <textarea
+                  className="textarea textarea-bordered min-h-[120px]"
+                  value={form.comment}
+                  onChange={(e) =>
+                    setForm({ ...form, comment: e.target.value })
+                  }
+                  placeholder="Write your experience..."
+                  disabled={posting}
+                  required
+                />
+
+                <button className="btn btn-primary" disabled={posting}>
+                  {posting ? "Posting..." : "Submit Review"}
+                </button>
+
+                {!user && (
+                  <p className="text-xs opacity-70">
+                    Please{" "}
+                    <Link className="link" to="/login">
+                      login
+                    </Link>{" "}
+                    to post a review.
+                  </p>
+                )}
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      {/* Related */}
+      <div className="space-y-4">
+        <h2 className="text-2xl font-bold flex items-center gap-2">
+          <span>🔁</span> Related Listings
+        </h2>
+
+        {relLoading ? (
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div
+                key={i}
+                className="card bg-base-200 border border-base-300 rounded-2xl"
+              >
+                <div className="skeleton w-full aspect-[4/3]" />
+                <div className="p-4 space-y-3">
+                  <div className="skeleton h-4 w-2/3" />
+                  <div className="skeleton h-3 w-1/2" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : related.length ? (
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {related.map((x) => (
+              <article
+                key={x._id}
+                className="card bg-base-200 border border-base-300 rounded-2xl overflow-hidden"
+              >
+                <figure className="w-full aspect-[4/3] bg-base-300">
+                  <img
+                    src={x.image || fallbackImg}
+                    alt={x.name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => (e.currentTarget.src = fallbackImg)}
+                  />
+                </figure>
+                <div className="card-body p-4">
+                  <h3 className="font-semibold line-clamp-1">{x.name}</h3>
+                  <p className="text-sm opacity-80 line-clamp-2">
+                    {x.description}
+                  </p>
+                  <div className="pt-3 flex justify-end">
+                    <Link
+                      className="btn btn-primary btn-sm"
+                      to={`/supplies/${x._id}`}
+                    >
+                      View Details
+                    </Link>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <div className="alert">
+            <span>No related items found.</span>
+          </div>
+        )}
+      </div>
+    </section>
   );
 }

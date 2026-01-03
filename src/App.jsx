@@ -1,4 +1,5 @@
-import { Outlet, NavLink } from "react-router-dom";
+// src/App.jsx
+import { Outlet } from "react-router-dom";
 import Navbar from "./components/layout/Navbar.jsx";
 import Footer from "./components/layout/Footer.jsx";
 import LoadingSpinner from "./components/layout/LoadingSpinner.jsx";
@@ -9,7 +10,8 @@ export default function App() {
     <div className="min-h-screen bg-base-100">
       <Navbar />
 
-      <main className="container mx-auto px-3 py-6">
+      {/* ✅ main container বাদ — page নিজের মতো container নেবে */}
+      <main className="min-h-[calc(100vh-64px)]">
         <Suspense fallback={<LoadingSpinner />}>
           <Outlet />
         </Suspense>
