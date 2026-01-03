@@ -83,6 +83,9 @@ export default function AuthProvider({ children }) {
   const value = {
     user,
     loading,
+    register: createUser,
+    login: loginUser,
+    loginWithGoogle: googleSignIn,
     createUser,
     loginUser,
     googleSignIn,
